@@ -1,7 +1,8 @@
+import os
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-import os
 import math
+
 # Function to calculate entropy
 def calculate_entropy(data):
     byte_freq = [0] * 256
@@ -16,7 +17,7 @@ def calculate_entropy(data):
     
     return entropy
 
-# Function to check if the file is likely encrypted
+# Function to check if the file is encrypted
 def is_encrypted(file_path):
     try:
         with open(file_path, 'rb') as file:
@@ -25,7 +26,7 @@ def is_encrypted(file_path):
             # Calculate entropy
             entropy = calculate_entropy(file_data)
             
-            # If the entropy is above threshold , it's likely encrypted
+            # If the entropy = above threshold, it's encrypted
             if entropy > 4.0:
                 return True
             else:
@@ -34,15 +35,32 @@ def is_encrypted(file_path):
         print(f"Error checking file: {e}")
         return False
 
+# Function to generate a Fernet key
+def generate_fernet_key():
+    return Fernet.generate_key()
+
 # Fernet encryption
-def encrypt_fernet(file_path, key):
+def encrypt_fernet(file_path):
+    key = generate_fernet_key()
     fernet = Fernet(key)
+
     with open(file_path, 'rb') as file:
         file_data = file.read()
+
     encrypted_data = fernet.encrypt(file_data)
-    with open(file_path + '.encrypted', 'wb') as file:
+
+    # Create the encrypted filename
+    encrypted_filename = "encrypted-" + os.path.basename(file_path)
+    with open(encrypted_filename, 'wb') as file:
         file.write(encrypted_data)
-    print(f"File encrypted as {file_path}.encrypted")
+
+    # Save the key for later decryption
+    key_filename = "key-" + os.path.basename(file_path)
+    with open(key_filename, 'wb') as key_file:
+        key_file.write(key)
+
+    print(f"File encrypted as {encrypted_filename}")
+    print(f"Key saved as {key_filename}")
 
 # Fernet decryption
 def decrypt_fernet(file_path, key):
@@ -57,9 +75,14 @@ def decrypt_fernet(file_path, key):
     except Exception as e:
         print(f"Decryption failed: {e}")
 
+# Function to generate a random AES key (supports 16, 24, or 32 bytes)
+def generate_aes_key(key_size=32):
+    return os.urandom(key_size)
+
 # AES encryption
-def encrypt_aes(file_path, key):
-    iv = os.urandom(16)  # AES block size (128 bits)
+def encrypt_aes(file_path, key_size=32):
+    key = generate_aes_key(key_size)
+    iv = os.urandom(16) 
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
     encryptor = cipher.encryptor()
 
@@ -69,13 +92,22 @@ def encrypt_aes(file_path, key):
     # Padder ensure that data is encrypted in blocks (e.g., 13 bytes string replaced with a 16 bytes string) 
     # (REMOVED WHEN DECRYPTED)
     pad_length = 16 - len(file_data) % 16
-    file_data += bytes([pad_length]) * pad_length
-    
-    encrypted_data = encryptor.update(file_data) + encryptor.finalize()
+    padded_data = file_data + bytes([pad_length]) * pad_length
 
-    with open(file_path + '.encrypted', 'wb') as file:
+    encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
+
+    # Create the encrypted filename
+    encrypted_filename = "encrypted-" + os.path.basename(file_path)
+    with open(encrypted_filename, 'wb') as file:
         file.write(iv + encrypted_data)
-    print(f"File encrypted as {file_path}.encrypted")
+
+    # Save the key for later decryption
+    key_filename = "key-" + os.path.basename(file_path)
+    with open(key_filename, 'wb') as key_file:
+        key_file.write(key)
+
+    print(f"File encrypted as {encrypted_filename}")
+    print(f"Key saved as {key_filename}")
 
 # Function for AES decryption
 def decrypt_aes(file_path, key):
@@ -88,7 +120,7 @@ def decrypt_aes(file_path, key):
     decryptor = cipher.decryptor()
     decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
 
-    # REMOVE PADDING
+    # Remove padding
     pad_length = decrypted_data[-1]
     decrypted_data = decrypted_data[:-pad_length]
 
@@ -139,17 +171,12 @@ def main():
             method = prompt_input("Choose encryption method (Fernet or AES): ").lower()
 
             if method == "fernet":
-                key_input = prompt_input("Enter a Fernet key for encryption (or generate one using Fernet.generate_key()): ").encode()
-                try:
-                    encrypt_fernet(file_path, key_input)
-                except Exception as e:
-                    print(f"Error during encryption: {e}")
+                # Automatically generate a key if not provided
+                encrypt_fernet(file_path)
             elif method == "aes":
-                key_input = prompt_input("Enter the AES key for encryption (16, 24, or 32 bytes): ").encode()
-                try:
-                    encrypt_aes(file_path, key_input)
-                except Exception as e:
-                    print(f"Error during encryption: {e}")
+                # Prompt for AES key size, default to 32 bytes if not provided
+                key_size = int(prompt_input("Enter AES key size (16, 24, or 32 bytes): "))
+                encrypt_aes(file_path, key_size=key_size)
             else:
                 print("Invalid method selected.")
         elif action == "no":
