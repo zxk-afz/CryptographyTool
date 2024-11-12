@@ -1,27 +1,52 @@
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import padding
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import os
+import base64
 
+# Function to check if the file is encrypted
 def is_encrypted(file_path):
     try:
         with open(file_path, 'rb') as file:
-            first_bytes = file.read(4)  # Read the first bytes
-            # Check if the first few bytes indicate encryption
-            return first_bytes != b'PKCS'  # Check headers
+            file_data = file.read(64)  # Read the first 64 bytes for analysis
+            # If the file contains mostly printable characters, it's not encrypted
+            if all(32 <= byte <= 126 for byte in file_data):
+                return False
+            return True
     except Exception as e:
         print(f"Error checking file: {e}")
         return False
 
+# Fernet encryption
+def encrypt_fernet(file_path, key):
+    fernet = Fernet(key)
+    with open(file_path, 'rb') as file:
+        file_data = file.read()
+    encrypted_data = fernet.encrypt(file_data)
+    with open(file_path + '.encrypted', 'wb') as file:
+        file.write(encrypted_data)
+    print(f"File encrypted as {file_path}.encrypted")
+
+# Fernet decryption
+def decrypt_fernet(file_path, key):
+    fernet = Fernet(key)
+    with open(file_path, 'rb') as file:
+        encrypted_data = file.read()
+    try:
+        decrypted_data = fernet.decrypt(encrypted_data)
+        with open(file_path + '.decrypted', 'wb') as file:
+            file.write(decrypted_data)
+        print(f"File decrypted as {file_path}.decrypted")
+    except Exception as e:
+        print(f"Decryption failed: {e}")
+
 # AES encryption
-def encrypt_AES(file_path, key):
-    iv = os.urandom(16)  # Size (128 bits)
+def encrypt_aes(file_path, key):
+    iv = os.urandom(16)  # AES block size (128 bits)
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
     encryptor = cipher.encryptor()
-    # "rb" = read binary (just for your knowledge)
+
     with open(file_path, 'rb') as file:
-        data = file.read()
+        file_data = file.read()
 
     # Padder ensure that data is encrypted in blocks (e.g., 13 bytes string replaced with a 16 bytes string) 
     # (REMOVED WHEN DECRYPTED)
@@ -31,15 +56,15 @@ def encrypt_AES(file_path, key):
     encrypted_data = encryptor.update(file_data) + encryptor.finalize()
 
     with open(file_path + '.encrypted', 'wb') as file:
-        file.write(iv + encrypted_data) 
+        file.write(iv + encrypted_data)
     print(f"File encrypted as {file_path}.encrypted")
 
-# AES decryption
-def decrypt_AES(file_path, key):
+# Function for AES decryption
+def decrypt_aes(file_path, key):
     with open(file_path, 'rb') as file:
         file_data = file.read()
-    iv = file_data[:16] # IV
-    encrypted_data = file_data[16:] # Encrypted data
+    iv = file_data[:16]
+    encrypted_data = file_data[16:]
 
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
     decryptor = cipher.decryptor()
@@ -53,84 +78,66 @@ def decrypt_AES(file_path, key):
         file.write(decrypted_data)
     print(f"File decrypted as {file_path}.decrypted")
 
-# Fernet encryption (way easier than AES encryption)
-def encrypt_Fernet(file_path, key):
-    fernet = Fernet(key)
-    with open(file_path, 'rb') as file:
-        data = file.read()
+# Prompt for input with retries
+def prompt_input(prompt, required=True):
+    while True:
+        user_input = input(prompt)
+        if user_input or not required:
+            return user_input
+        else:
+            print("Input is required. Please try again.")
 
-    # Padder included in Fernet ;)
-    encrypted_data = fernet.encrypt(data)
-
-    with open(file_path + '.encrypted', 'wb') as file:
-        file.write(encrypted_data)
-    print(f"File encrypted as {file_path}.encrypted")
-
-# Fernet decryption
-def decrypt_Fernet(file_path, key):
-    fernet = Fernet(key)
-    with open(file_path, 'rb') as file:
-        encrypted_data = file.read()
-    try:
-        decrypted_data = fernet.decrypt(encrypted_data)
-        with open(file_path + '.decrypted', 'wb') as file:
-            file.write(decrypted_data)
-        print(f"File decrypted as {file_path}.decrypted")
-    except Exception as e:
-        print(f"Decryption failed: {e}")
-
-# Main logic
+# Main 
 def main():
-    file_path = input("Enter the full path of the file: ")
+    file_path = prompt_input("Enter the full path of the file: ")
 
     if not os.path.exists(file_path):
-        print("File does not exist :(")
+        print("File does not exist.")
         return
 
     if is_encrypted(file_path):
         print("This file appears to be encrypted.")
-        method = input("Choose decryption method (Fernet or AES): ").lower()
+        method = prompt_input("Choose decryption method (Fernet or AES): ").lower()
 
         if method == "fernet":
-            key = input("Enter the Fernet key for decryption: ")
+            key_input = prompt_input("Enter the Fernet key for decryption: ")
             try:
-                decrypt_Fernet(file_path, key.encode())
+                decrypt_fernet(file_path, key_input.encode())
             except Exception as e:
                 print(f"Error during decryption: {e}")
         elif method == "aes":
-            key = input("Enter the AES key for decryption (16, 24, or 32 bytes): ").encode()
+            key_input = prompt_input("Enter the AES key for decryption (16, 24, or 32 bytes): ").encode()
             try:
-                decrypt_AES(file_path, key)
+                decrypt_aes(file_path, key_input)
             except Exception as e:
                 print(f"Error during decryption: {e}")
         else:
             print("Invalid method selected.")
     else:
         print("This file is not encrypted.")
-        action = input("Do you want to encrypt the file? (y/n): ").lower()
+        action = prompt_input("Do you want to encrypt the file? (yes/no): ").lower()
 
-        if action == "y" | "yes":
-            method = input("Choose encryption method (Fernet or AES): ").lower()
+        if action == "yes":
+            method = prompt_input("Choose encryption method (Fernet or AES): ").lower()
 
             if method == "fernet":
-                key = input("Enter a Fernet key for encryption (or generate one using Fernet.generate_key()): ").encode()
+                key_input = prompt_input("Enter a Fernet key for encryption (or generate one using Fernet.generate_key()): ").encode()
                 try:
-                    encrypt_Fernet(file_path, key)
+                    encrypt_fernet(file_path, key_input)
                 except Exception as e:
                     print(f"Error during encryption: {e}")
             elif method == "aes":
-                key = input("Enter the AES key for encryption (16, 24, or 32 bytes): ").encode()
+                key_input = prompt_input("Enter the AES key for encryption (16, 24, or 32 bytes): ").encode()
                 try:
-                    encrypt_AES(file_path, key)
+                    encrypt_aes(file_path, key_input)
                 except Exception as e:
                     print(f"Error during encryption: {e}")
             else:
                 print("Invalid method selected.")
-        elif action == "no" | 'n':
-            print("File was not encrypted.")
+        elif action == "no":
+            print("File was not encrypted and will not be processed.")
         else:
             print("Invalid input.")
-
 
 if __name__ == "__main__":
     try:
