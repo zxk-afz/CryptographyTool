@@ -8,6 +8,10 @@ import os
 def generate_AES_key():
     return os.urandom(32)
 
+# Generate Frenet key
+def generate_Fernet_key():
+    return Fernet.generate_key()
+
 # AES encryption
 def encrypt_AES(input_file, output_file, key):
     # "rb" = read binary (just for your knowledge)
@@ -69,3 +73,48 @@ def decrypt_Frenet(input_file, output_file, key):
 
     with open(output_file, 'wb') as file:
         file.write(decrypted_data)
+
+# main function
+def main():
+    # Select encryption type
+    type = input("Choose encryption type (1 for AES, 2 for Frenet): ")
+
+    # type
+    if type == "1":
+        key = generate_AES_key()
+        print("Selected AES encryption method")
+
+        input_filename = input("Enter the full path of the file to encrypt (e.g., 'file.txt'): ")
+        encrypted_filename = input("Enter the name of the file to save the encrypted data (e.g., 'file_encrypted.bin'): ")
+        decrypted_filename = input("Enter the name of the file to save the decrypted data (e.g., 'file_decrypted.txt'): ")
+
+        # Encrypt AES
+        encrypt_AES(input_filename, encrypted_filename, key)
+        print("Encryption complete.")
+        
+        # Decrypt Frenet
+        decrypt_AES(encrypted_filename, decrypted_filename, key)
+        print("Decryption complete.")
+    
+    elif type == "2":
+        key = generate_Fernet_key()
+        print("Selected Frenet encryption method")
+
+        input_filename = input("Enter the full path of the file to encrypt (e.g., 'file.txt'): ")
+        encrypted_filename = input("Enter the name of the file to save the encrypted data (e.g., 'file_encrypted.bin'): ")
+        decrypted_filename = input("Enter the name of the file to save the decrypted data (e.g., 'file_decrypted.txt'): ")
+
+        # Encrypt Frenet
+        encrypt_Frenet(input_filename, encrypted_filename, key)
+        print("Encryption complete.")
+
+        # Decrypt Frenet
+        decrypt_AES(encrypted_filename, decrypted_filename, key)
+        print("Decryption complete.")
+    
+    else:       
+        print("Invalid! Please write 1 for AES or 2 for Fernet.")
+
+
+if __name__ == "__main__":
+    main()
