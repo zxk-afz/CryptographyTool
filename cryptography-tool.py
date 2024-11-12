@@ -136,4 +136,4 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\nProgram was cancelled :(")
+        print("\n\nProgram was cancelled")
