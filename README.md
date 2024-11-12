@@ -2,6 +2,10 @@
 
 This Python script allows you to encrypt and decrypt files using your preferred encryption methods.
 
+## Encryption types/methods
+- Frenet
+- AES
+
 ## Features
 - Supports file encryption and decryption.
 - User can select between different encryption methods.
