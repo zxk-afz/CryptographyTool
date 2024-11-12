@@ -6,10 +6,14 @@ This Python script allows you to encrypt and decrypt files using your preferred 
 - **Fernet**: Symmetric encryption for secure file storage.
 - **AES**: Advanced Encryption Standard, a widely-used symmetric encryption algorithm.
 
+
 ## Features
-- Supports file encryption and decryption.
-- User can select between different encryption methods (Fernet or AES).
-- Handling of encryption and decryption processes.
+
+- **Entropy Calculation**: Determines if a file is likely encrypted based on its entropy value (Shannon entropy).
+- **Fernet Encryption**: Encrypt files with Fernet symmetric encryption.
+- **AES Encryption**: Encrypt files using AES with CBC mode (supporting key sizes of 16, 24, or 32 bytes).
+- **Encryption Key Management**: Saves the generated encryption keys for later decryption.
+- **Decryption**: Decrypt files using the saved keys (for both Fernet and AES encryption).
 
 ## Requirements
 - Python 3.x
@@ -23,17 +27,30 @@ pip install cryptography
 ```
 
 ## Usage
-1. **Run script**:
+
+### Encrypt a File
+1. Run the script.
+2. Enter the full path of the file you want to encrypt.
+3. Choose whether to encrypt using **Fernet** or **AES**.
+4. If using **AES**, select the key size (16, 24, or 32 bytes).
+
+The tool will create a new file prefixed with `encrypted-` and save the encryption key in a separate file with the prefix `key-`.
+
+### Decrypt a File
+1. Run the script.
+2. Enter the full path of the encrypted file.
+3. Choose whether to decrypt using **Fernet** or **AES**.
+4. Enter the encryption key when prompted.
+
+The tool will create a new file with the `.decrypted` suffix.
+
+## Example
+
 ```bash
-python file_encryptor.py
+Enter the full path of the file: /home/user/file.txt
+This file is not encrypted.
+Do you want to encrypt the file? (yes/no): yes
+Choose encryption method (Fernet or AES): Fernet
+File encrypted as encrypted-file.txt
+Key saved as key-file.txt
 ```
-2. When **prompted**, enter:
-- The full path of the file you want to encrypt or decrypt.
-- The name of the file where the encrypted data will be saved (for encryption).
-- The name of the file where the decrypted data will be saved (for decryption).
-```bash
-Enter the full path of the file to encrypt (e.g., 'file.txt'): file.txt
-Enter the name of the file to save the encrypted data (e.g., 'file_encrypted.bin'): file_encrypted.bin
-Enter the name of the file to save the decrypted data (e.g., 'file_decrypted.txt'): file_decrypted.txt
-```
-3. The script will automatically detect if the file is already encrypted. If it is encrypted, it will prompt the user to choose a decryption method (Fernet or AES).
