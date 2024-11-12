@@ -52,9 +52,20 @@ def encrypt_Frenet(input_file, output_file, key):
     with open(input_file, 'rb') as file:
         data = file.read()
     
+    # Padder included in Frenet ;) (Je pense)
     frenet = Fernet(key)
     encrypted_data = frenet.encrypt(data)
 
     with open(output_file, 'wb') as file:
         file.write(encrypted_data)
 
+# Frenet decryption
+def decrypt_Frenet(input_file, output_file, key):
+    with open(input_file, "rb") as file:
+        encrypted_data = file.read()
+    
+    frenet = Fernet(key)
+    decrypted_data = frenet.decrypt(encrypted_data)
+
+    with open(output_file, 'wb') as file:
+        file.write(decrypted_data)
