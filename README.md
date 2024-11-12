@@ -1,6 +1,6 @@
 # File Encryption and Decryption Tool (cryptography)
 
-This Python script allows you to encrypt and decrypt files using your preferred encryption methods.
+This Python script allows you to encrypt and decrypt files.
 
 ## Encryption Types/Methods
 - **Fernet**: Symmetric encryption for secure file storage.
