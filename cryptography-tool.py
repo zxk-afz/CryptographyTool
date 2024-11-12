@@ -1,17 +1,35 @@
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import os
-import base64
+import math
+# Function to calculate entropy
+def calculate_entropy(data):
+    byte_freq = [0] * 256
+    for byte in data:
+        byte_freq[byte] += 1
+    
+    entropy = 0.0
+    for freq in byte_freq:
+        if freq > 0:
+            prob = freq / len(data)
+            entropy -= prob * math.log2(prob)
+    
+    return entropy
 
-# Function to check if the file is encrypted
+# Function to check if the file is likely encrypted
 def is_encrypted(file_path):
     try:
         with open(file_path, 'rb') as file:
-            file_data = file.read(64)  # Read the first 64 bytes for analysis
-            # If the file contains mostly printable characters, it's not encrypted
-            if all(32 <= byte <= 126 for byte in file_data):
+            file_data = file.read(64)  # Read the first 64 bytes
+            
+            # Calculate entropy
+            entropy = calculate_entropy(file_data)
+            
+            # If the entropy is above threshold , it's likely encrypted
+            if entropy > 4.0:
+                return True
+            else:
                 return False
-            return True
     except Exception as e:
         print(f"Error checking file: {e}")
         return False
