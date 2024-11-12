@@ -4,12 +4,13 @@ from cryptography.hazmat.primitives import padding
 from cryptography.fernet import Fernet
 import os
 
-# Generate AES key (32 bytes - AES-256)
+# Generate AES key (32 bytes - AES-256 | 16 bytes - AES-128)
 def generate_AES_key():
     return os.urandom(32)
 
 # AES encryption
 def encrypt_AES(input_file, output_file, key):
+    # "rb" = read binary (just for your knowledge)
     with open(input_file, 'rb') as file:
         data = file.read()
 
@@ -25,6 +26,7 @@ def encrypt_AES(input_file, output_file, key):
     encryptor = cipher.encryptor()
     encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
 
+    # "wb" = write binary
     with open(output_file, 'wb') as file:
         file.write(iv + encrypted_data)
 
@@ -44,3 +46,15 @@ def decrypt_AES(input_file, output_file, key):
 
     with open(output_file, 'wb') as file:
         file.write(data)
+
+# Frenet encryption (way easier than AES encryption)
+def encrypt_Frenet(input_file, output_file, key):
+    with open(input_file, 'rb') as file:
+        data = file.read()
+    
+    frenet = Fernet(key)
+    encrypted_data = frenet.encrypt(data)
+
+    with open(output_file, 'wb') as file:
+        file.write(encrypted_data)
+
